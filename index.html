@@ -151,6 +151,32 @@
     <div class="modal-body" id="modalBody"></div>
   </div>
 
+  <!-- Admin login modal -->
+  <div class="modal-overlay" id="adminLoginOverlay"></div>
+  <div class="modal admin-modal" id="adminLoginModal">
+    <button class="icon-btn modal-close" id="adminLoginClose">×</button>
+    <div class="modal-body">
+      <h3>Acceso administrativo</h3>
+      <input type="password" id="adminPwd" placeholder="Contraseña" class="admin-input" />
+      <button class="btn btn-pink btn-full" id="adminLoginBtn">Entrar</button>
+      <p id="adminLoginMsg" class="admin-msg"></p>
+    </div>
+  </div>
+
+  <!-- Admin panel -->
+  <div class="modal-overlay" id="adminPanelOverlay"></div>
+  <div class="modal admin-panel" id="adminPanel">
+    <div class="admin-head">
+      <h3>Panel de administración</h3>
+      <button class="btn btn-outline" id="adminLogout">Cerrar sesión</button>
+    </div>
+    <div class="admin-body" id="adminBody"></div>
+    <div class="admin-foot">
+      <button class="btn btn-pink" id="adminSave">Guardar y Publicar Catálogo</button>
+      <p id="adminStatus" class="admin-msg"></p>
+    </div>
+  </div>
+
   <script src="assets/js/script.js"></script>
 </body>
 </html>

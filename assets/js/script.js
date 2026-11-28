@@ -4,11 +4,11 @@ function placeholderSvg(color, label) {
   return `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400'><rect width='400' height='400' fill='${encodeURIComponent(color)}'/><text x='50%25' y='50%25' font-family='Playfair Display,serif' font-size='22' fill='white' text-anchor='middle' dominant-baseline='middle'>${encodeURIComponent(label)}</text></svg>`;
 }
 
-const products = [
-  { id:1, name:'Serum Glow', price:45000, desc:'Serum iluminador para un brillo natural y duradero.', img:placeholderSvg('#F48FB1','Serum Glow') },
-  { id:2, name:'Base Velvet', price:62000, desc:'Base de cobertura media con acabado aterciopelado.', img:placeholderSvg('#D1C4E9','Base Velvet') },
-  { id:3, name:'Labial Rosa', price:28000, desc:'Labial mate de larga duración en tono rosa.', img:placeholderSvg('#F8BBD0','Labial Rosa') },
-  { id:4, name:'Paleta Sunset', price:75000, desc:'Paleta de sombras cálidas inspirada en el atardecer.', img:placeholderSvg('#FCE4EC','Paleta Sunset') },
+let products = [
+  { id:1, nombre:'Serum Glow', categoria:'Cuidado facial', precio:45000, stock:12, descripcion:'Serum iluminador para un brillo natural y duradero.', imagen:'assets/images/image.png', enlacePago:'https://pay.example.com/serum-glow' },
+  { id:2, nombre:'Base Velvet', categoria:'Maquillaje', precio:62000, stock:8, descripcion:'Base de cobertura media con acabado aterciopelado.', imagen:'assets/images/image.png', enlacePago:'https://pay.example.com/base-velvet' },
+  { id:3, nombre:'Labial Rosa', categoria:'Maquillaje', precio:28000, stock:0, descripcion:'Labial mate de larga duración en tono rosa.', imagen:'assets/images/image.png', enlacePago:'https://pay.example.com/labial-rosa' },
+  { id:4, nombre:'Paleta Sunset', categoria:'Maquillaje', precio:75000, stock:5, descripcion:'Paleta de sombras cálidas.', imagen:'assets/images/image.png', enlacePago:'https://pay.example.com/paleta' },
 ];
 
 let cart = JSON.parse(localStorage.getItem('yv_cart') || '[]');
@@ -19,12 +19,13 @@ function renderProducts(){
   const grid = document.getElementById('productGrid');
   const html = products.map(p => `
     <div class="card" data-id="${p.id}">
-      <img class="card-img" src="${p.img}" alt="${p.name}" loading="lazy" />
+      <img class="card-img" src="${p.imagen || p.img}" alt="${p.nombre || p.name}" loading="lazy" />
       <div class="card-body">
-        <div class="card-name">${p.name}</div>
-        <div class="card-price">${formatPrice(p.price)}</div>
+        <div class="card-name">${p.nombre || p.name}</div>
+        <div class="card-price">${formatPrice(p.precio || p.price)}</div>
+        <div class="card-stock">${(p.stock || 0) > 0 ? 'Disponibles: ' + (p.stock || 0) + ' unidades' : 'Agotado'}</div>
         <div class="card-row">
-          <button class="btn-buy" data-add="${p.id}">Comprar</button>
+          <button class="btn-buy" data-add="${p.id}" ${(p.stock || 0) <= 0 ? 'disabled' : ''}>Comprar</button>
           <button class="btn-buy" data-view="${p.id}" style="background:#D1C4E9;color:#333;">Ver</button>
         </div>
       </div>
@@ -40,7 +41,7 @@ function renderProducts(){
 function addToCart(id){
   const item = cart.find(c => c.id === id);
   if (item) item.qty += 1;
-  else { const p = products.find(x => x.id === id); cart.push({ id, name: p.name, price: p.price, img: p.img, qty: 1 }); }
+  else { const p = products.find(x => x.id === id); cart.push({ id, name: p.nombre || p.name, price: p.precio || p.price, img: p.imagen || p.img, qty: 1 }); }
   saveCart(); updateCartUI(); pulseCart();
 }
 function removeFromCart(id){ cart = cart.filter(c => c.id !== id); saveCart(); updateCartUI(); }
@@ -86,10 +87,10 @@ function pulseCart(){
 function openModal(id){
   const p = products.find(x => x.id === id);
   document.getElementById('modalBody').innerHTML = `
-    <img src="${p.img}" alt="${p.name}" />
-    <h3>${p.name}</h3>
-    <div class="price">${formatPrice(p.price)}</div>
-    <div class="desc">${p.desc}</div>
+    <img src="${p.imagen || p.img}" alt="${p.nombre || p.name}" />
+    <h3>${p.nombre || p.name}</h3>
+    <div class="price">${formatPrice(p.precio || p.price)}</div>
+    <div class="desc">${p.descripcion || p.desc}</div>
     <div class="modal-actions">
       <button class="btn btn-pink" id="modalAdd">Agregar al carrito</button>
       <a class="btn btn-pink-outline" href="${waLink('Hola, me interesa: ' + p.name)}" target="_blank" rel="noopener">Pedir por WhatsApp</a>
@@ -167,5 +168,126 @@ document.getElementById('checkoutBtn').addEventListener('click', checkout);
 document.getElementById('waContact').href = waLink('Hola, quisiera más información.');
 document.getElementById('fabWa').href = waLink('Hola, quisiera más información.');
 
-renderProducts();
-updateCartUI();
+// Dynamic load from productos.json
+async function loadProducts() {
+  try {
+    const res = await fetch('productos.json?v=' + Date.now());
+    products = await res.json();
+  } catch (e) { /* keep defaults */ }
+  renderProducts();
+  updateCartUI();
+}
+
+// 7-click hidden trigger on logo
+let logoClicks = 0;
+let logoTimer = null;
+document.querySelector('.logo').addEventListener('click', (e) => {
+  e.preventDefault();
+  logoClicks++;
+  if (logoTimer) clearTimeout(logoTimer);
+  logoTimer = setTimeout(() => { logoClicks = 0; }, 4000);
+  if (logoClicks >= 7) {
+    logoClicks = 0;
+    openAdminLogin();
+  }
+});
+
+function openAdminLogin() {
+  document.getElementById('adminLoginOverlay').classList.add('open');
+  document.getElementById('adminLoginModal').classList.add('open');
+}
+function closeAdminLogin() {
+  document.getElementById('adminLoginOverlay').classList.remove('open');
+  document.getElementById('adminLoginModal').classList.remove('open');
+}
+document.getElementById('adminLoginClose').addEventListener('click', closeAdminLogin);
+document.getElementById('adminLoginOverlay').addEventListener('click', closeAdminLogin);
+
+const WORKER_URL = 'https://yoosi-vanity-api.miguelluquesuares.workers.dev';
+
+document.getElementById('adminLoginBtn').addEventListener('click', async () => {
+  const pwd = document.getElementById('adminPwd').value;
+  const msg = document.getElementById('adminLoginMsg');
+  msg.textContent = 'Verificando...';
+  try {
+    const res = await fetch(WORKER_URL + '/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pwd }),
+    });
+    const data = await res.json();
+    if (!res.ok) { msg.textContent = data.error || 'Error'; return; }
+    sessionStorage.setItem('yv_token', data.token);
+    closeAdminLogin();
+    openAdminPanel();
+  } catch (e) { msg.textContent = 'Error de red'; }
+});
+
+function openAdminPanel() {
+  document.getElementById('adminPanelOverlay').classList.add('open');
+  document.getElementById('adminPanel').classList.add('open');
+  renderAdmin();
+}
+function closeAdminPanel() {
+  document.getElementById('adminPanelOverlay').classList.remove('open');
+  document.getElementById('adminPanel').classList.remove('open');
+}
+document.getElementById('adminLogout').addEventListener('click', () => {
+  sessionStorage.removeItem('yv_token');
+  closeAdminPanel();
+});
+
+function renderAdmin() {
+  const body = document.getElementById('adminBody');
+  body.innerHTML = products.map((p, i) => `
+    <div class="admin-row" data-i="${i}">
+      <input value="${p.nombre}" data-f="nombre" />
+      <input value="${p.categoria}" data-f="categoria" />
+      <input type="number" value="${p.precio}" data-f="precio" />
+      <input type="number" value="${p.stock}" data-f="stock" />
+      <input value="${p.imagen}" data-f="imagen" />
+      <input value="${p.enlacePago}" data-f="enlacePago" />
+      <textarea data-f="descripcion">${p.descripcion}</textarea>
+      <button class="btn-buy" data-del="${i}">Eliminar</button>
+    </div>
+  `).join('') + `<button class="btn btn-pink" id="adminAdd">+ Nuevo producto</button>`;
+  body.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => {
+    products.splice(+b.dataset.del, 1);
+    renderAdmin();
+  }));
+  body.querySelectorAll('input,textarea').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const row = inp.closest('.admin-row');
+      const i = +row.dataset.i;
+      const f = inp.dataset.f;
+      products[i][f] = (f === 'precio' || f === 'stock') ? Number(inp.value) : inp.value;
+    });
+  });
+  document.getElementById('adminAdd').addEventListener('click', () => {
+    products.push({ id: Date.now(), nombre: '', categoria: '', precio: 0, stock: 0, descripcion: '', imagen: '', enlacePago: '' });
+    renderAdmin();
+  });
+}
+
+document.getElementById('adminSave').addEventListener('click', async () => {
+  const status = document.getElementById('adminStatus');
+  const token = sessionStorage.getItem('yv_token');
+  status.textContent = 'Guardando en GitHub...';
+  try {
+    const res = await fetch(WORKER_URL + '/update-catalog', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ products }),
+    });
+    const data = await res.json();
+    if (!res.ok) { status.textContent = data.error || 'Error'; return; }
+    status.textContent = data.message || 'Catálogo actualizado.';
+    renderProducts();
+  } catch (e) { status.textContent = 'Error de red'; }
+});
+
+document.getElementById('adminPanelOverlay').addEventListener('click', closeAdminPanel);
+
+// override products decl (make mutable)
+// products already declared with let? check
+loadProducts();
