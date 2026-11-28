@@ -32,9 +32,15 @@ function renderProducts(){
     </div>
   `).join('');
   grid.innerHTML = html + html;
-  grid.querySelectorAll('[data-add]').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); addToCart(+btn.dataset.add); }));
-  grid.querySelectorAll('[data-view]').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); openModal(+btn.dataset.view); }));
-  grid.querySelectorAll('.card').forEach(card => card.addEventListener('click', () => openModal(+card.dataset.id)));
+  // event delegation
+  grid.addEventListener('click', (e) => {
+    const addBtn = e.target.closest('[data-add]');
+    const viewBtn = e.target.closest('[data-view]');
+    if (addBtn) { e.stopPropagation(); addToCart(+addBtn.dataset.add); return; }
+    if (viewBtn) { e.stopPropagation(); openModal(+viewBtn.dataset.view); return; }
+    const card = e.target.closest('.card');
+    if (card) openModal(+card.dataset.id);
+  });
   initScroller();
 }
 
@@ -43,6 +49,7 @@ function addToCart(id){
   if (item) item.qty += 1;
   else { const p = products.find(x => x.id === id); cart.push({ id, name: p.nombre || p.name, price: p.precio || p.price, img: p.imagen || p.img, qty: 1 }); }
   saveCart(); updateCartUI(); pulseCart();
+  showToast('Agregado al carrito');
 }
 function removeFromCart(id){ cart = cart.filter(c => c.id !== id); saveCart(); updateCartUI(); }
 function changeQty(id, delta){
@@ -79,6 +86,13 @@ function updateCartUI(){
   }
   const total = cart.reduce((s,c) => s + c.price * c.qty, 0);
   document.getElementById('cartTotal').textContent = formatPrice(total);
+}
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2200);
 }
 function pulseCart(){
   const b = document.getElementById('cartBtn');
@@ -241,21 +255,54 @@ function renderAdmin() {
   const body = document.getElementById('adminBody');
   body.innerHTML = products.map((p, i) => `
     <div class="admin-row" data-i="${i}">
-      <input value="${p.nombre}" data-f="nombre" />
-      <input value="${p.categoria}" data-f="categoria" />
-      <input type="number" value="${p.precio}" data-f="precio" />
-      <input type="number" value="${p.stock}" data-f="stock" />
-      <input value="${p.imagen}" data-f="imagen" />
-      <input value="${p.enlacePago}" data-f="enlacePago" />
-      <textarea data-f="descripcion">${p.descripcion}</textarea>
-      <button class="btn-buy" data-del="${i}">Eliminar</button>
+      <input value="${p.nombre}" data-f="nombre" placeholder="Nombre" />
+      <input value="${p.categoria}" data-f="categoria" placeholder="Categoría" />
+      <input type="number" value="${p.precio}" data-f="precio" placeholder="Precio" />
+      <input type="number" value="${p.stock}" data-f="stock" placeholder="Stock" />
+      <input value="${p.imagen}" data-f="imagen" placeholder="Ruta imagen" />
+      <input value="${p.enlacePago}" data-f="enlacePago" placeholder="Enlace pago" />
+      <textarea data-f="descripcion" placeholder="Descripción">${p.descripcion}</textarea>
+      <div class="admin-row-actions">
+        <input type="file" accept="image/*" data-file="${i}" style="display:none" />
+        <button class="btn-buy" data-upload="${i}">Subir imagen</button>
+        <button class="btn-buy" data-del="${i}" style="background:#ff6b6b;color:#fff;">Eliminar</button>
+      </div>
     </div>
   `).join('') + `<button class="btn btn-pink" id="adminAdd">+ Nuevo producto</button>`;
   body.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => {
     products.splice(+b.dataset.del, 1);
     renderAdmin();
   }));
-  body.querySelectorAll('input,textarea').forEach(inp => {
+  body.querySelectorAll('[data-upload]').forEach(b => b.addEventListener('click', () => {
+    const i = +b.dataset.upload;
+    const input = body.querySelector(`input[data-file="${i}"]`);
+    input.click();
+    input.onchange = async () => {
+      const file = input.files[0];
+      if (!file) return;
+      const token = sessionStorage.getItem('yv_token');
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = reader.result.split(',')[1];
+        const status = document.getElementById('adminStatus');
+        status.textContent = 'Subiendo imagen...';
+        try {
+          const res = await fetch(WORKER_URL + '/upload-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ filename: file.name, content: base64 }),
+          });
+          const data = await res.json();
+          if (!res.ok) { status.textContent = data.error || 'Error al subir'; return; }
+          products[i].imagen = data.path;
+          status.textContent = 'Imagen subida: ' + data.path;
+          renderAdmin();
+        } catch (e) { status.textContent = 'Error de red'; }
+      };
+      reader.readAsDataURL(file);
+    };
+  }));
+  body.querySelectorAll('input[data-f],textarea[data-f]').forEach(inp => {
     inp.addEventListener('change', () => {
       const row = inp.closest('.admin-row');
       const i = +row.dataset.i;
