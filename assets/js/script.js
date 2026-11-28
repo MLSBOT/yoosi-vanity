@@ -263,8 +263,7 @@ function renderAdmin() {
       <input value="${p.enlacePago}" data-f="enlacePago" placeholder="Enlace pago" />
       <textarea data-f="descripcion" placeholder="Descripción">${p.descripcion}</textarea>
       <div class="admin-row-actions">
-        <input type="file" accept="image/*" data-file="${i}" style="display:none" />
-        <button class="btn-buy" data-upload="${i}">Subir imagen</button>
+        <input type="file" accept="image/*" data-file="${i}" />
         <button class="btn-buy" data-del="${i}" style="background:#ff6b6b;color:#fff;">Eliminar</button>
       </div>
     </div>
@@ -273,11 +272,9 @@ function renderAdmin() {
     products.splice(+b.dataset.del, 1);
     renderAdmin();
   }));
-  body.querySelectorAll('[data-upload]').forEach(b => b.addEventListener('click', () => {
-    const i = +b.dataset.upload;
-    const input = body.querySelector(`input[data-file="${i}"]`);
-    input.click();
-    input.onchange = async () => {
+  body.querySelectorAll('input[data-file]').forEach(input => {
+    input.addEventListener('change', async () => {
+      const i = +input.dataset.file;
       const file = input.files[0];
       if (!file) return;
       const token = sessionStorage.getItem('yv_token');
@@ -300,8 +297,8 @@ function renderAdmin() {
         } catch (e) { status.textContent = 'Error de red'; }
       };
       reader.readAsDataURL(file);
-    };
-  }));
+    });
+  });
   body.querySelectorAll('input[data-f],textarea[data-f]').forEach(inp => {
     inp.addEventListener('change', () => {
       const row = inp.closest('.admin-row');
