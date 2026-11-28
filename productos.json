@@ -1,6 +1,6 @@
 [
   {
-    "id": 1,
+    "id": "1",
     "nombre": "Serum Glow",
     "categoria": "Cuidado facial",
     "precio": 45000,
@@ -10,7 +10,7 @@
     "enlacePago": "https://pay.example.com/serum-glow"
   },
   {
-    "id": 2,
+    "id": "2",
     "nombre": "Base Velvet",
     "categoria": "Maquillaje",
     "precio": 62000,
@@ -20,12 +20,12 @@
     "enlacePago": "https://pay.example.com/base-velvet"
   },
   {
-    "id": 3,
-    "nombre": "Labial Rosa",
-    "categoria": "Maquillaje",
+    "id": "3",
+    "nombre": "Jajajaja",
+    "categoria": "Okok",
     "precio": 28000,
     "stock": 0,
-    "descripcion": "Labial mate de larga duración en tono rosa.",
+    "descripcion": "Pruebaaaa",
     "imagen": "assets/images/image.png",
     "enlacePago": "https://pay.example.com/labial-rosa"
   }
